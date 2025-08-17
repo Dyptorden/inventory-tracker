@@ -1,15 +1,16 @@
 {
   "files": {
     "main.css": "/inventory-tracker/static/css/main.0ffd3129.css",
-    "main.js": "/inventory-tracker/static/js/main.e5f7d569.js",
+    "main.js": "/inventory-tracker/static/js/main.e64bb1ae.js",
     "static/js/488.8a0fea1b.chunk.js": "/inventory-tracker/static/js/488.8a0fea1b.chunk.js",
+    "static/media/cyborg_rider_001.png": "/inventory-tracker/static/media/cyborg_rider_001.bc72f4d9f90e1e889665.png",
     "index.html": "/inventory-tracker/index.html",
     "main.0ffd3129.css.map": "/inventory-tracker/static/css/main.0ffd3129.css.map",
-    "main.e5f7d569.js.map": "/inventory-tracker/static/js/main.e5f7d569.js.map",
+    "main.e64bb1ae.js.map": "/inventory-tracker/static/js/main.e64bb1ae.js.map",
     "488.8a0fea1b.chunk.js.map": "/inventory-tracker/static/js/488.8a0fea1b.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.0ffd3129.css",
-    "static/js/main.e5f7d569.js"
+    "static/js/main.e64bb1ae.js"
   ]
 }
