@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import cyborgImage from './assets/cyborg_rider_001.png'; // Add this import
 
 // Mock database for demonstration (replace with actual Firebase in production)
 let mockDatabase = {
@@ -679,6 +680,29 @@ const InventoryTracker = () => {
         .right-panel {
           flex: 1;
           padding: 1rem;
+          background-image: url(${cyborgImage});
+          background-size: contain;
+          background-repeat: no-repeat;
+          background-position: center;
+          background-attachment: fixed;
+          position: relative;
+        }
+
+        .right-panel::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(243, 244, 246, 0.1 );
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .right-panel > * {
+          position: relative;
+          z-index: 2;
         }
 
         .panel-header {
@@ -751,8 +775,8 @@ const InventoryTracker = () => {
         .items-container {
           max-height: 60vh;
           overflow-y: auto;
-          position: relative; /* Add positioning context */
-          z-index: 1; /* Lower z-index for container */
+          position: relative;
+          z-index: 1;
         }
 
         .item-card {
@@ -765,7 +789,7 @@ const InventoryTracker = () => {
           position: relative;
           transition: background-color 0.2s;
           font-weight: 500;
-          z-index: 2; /* Higher than container but lower than popup */
+          z-index: 2;
         }
 
         .item-card:hover {
@@ -783,7 +807,7 @@ const InventoryTracker = () => {
         }
 
         .receiver-card {
-          background-color: #f0fdf4;
+          background-color: rgba(240, 253, 244, 0.5);
           border: 2px dashed #86efac;
           border-radius: 0.5rem;
           padding: 1rem;
@@ -791,15 +815,16 @@ const InventoryTracker = () => {
           position: relative;
           transition: all 0.2s;
           cursor: pointer;
+          backdrop-filter: blur(2px);
         }
 
         .receiver-card:hover {
-          background-color: #dcfce7;
+          background-color: rgba(220, 252, 231, 0.6);
         }
 
         .receiver-card.drag-over {
           border-color: #22c55e;
-          background-color: #dcfce7;
+          background-color: rgba(220, 252, 231, 0.6);
         }
 
         .receiver-name {
@@ -809,17 +834,18 @@ const InventoryTracker = () => {
         }
 
         .assigned-item {
-          background-color: #bfdbfe;
+          background-color: rgba(191, 219, 254, 0.9);
           border-radius: 0.375rem;
           padding: 0.25rem 0.5rem;
           margin-bottom: 0.25rem;
           font-size: 0.875rem;
           cursor: pointer;
           transition: background-color 0.2s;
+          backdrop-filter: blur(1px);
         }
 
         .assigned-item:hover {
-          background-color: #93c5fd;
+          background-color: rgba(147, 197, 253, 0.9);
         }
 
         .drop-indicator {
@@ -934,13 +960,14 @@ const InventoryTracker = () => {
           position: fixed;
           bottom: 1rem;
           right: 1rem;
-          background-color: #eff6ff;
+          background-color: rgba(239, 246, 255, 0.95);
           border: 1px solid #bfdbfe;
           border-radius: 0.5rem;
           padding: 1rem;
           max-width: 20rem;
           font-size: 0.875rem;
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+          backdrop-filter: blur(4px);
         }
 
         .instructions h4 {
@@ -958,10 +985,7 @@ const InventoryTracker = () => {
         }
 
         .empty-state {
-          text-align: center;
-          color: #6b7280;
-          padding: 2rem;
-          font-style: italic;
+          display: none;
         }
       `}</style>
 
