@@ -706,9 +706,11 @@ const InventoryTracker = () => {
         }
 
         .panel-header {
-          font-size: 1.25rem;
+          font-size: 1.5rem;
           font-weight: bold;
           margin-bottom: 1rem;
+          color: #888888;
+          text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.7);
         }
 
         .button-group {
