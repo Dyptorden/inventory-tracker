@@ -213,7 +213,7 @@ const ReceiverCell = ({ receiver, onItemDrop, onModify, onDelete, onItemRemove }
         </div>
       ))}
 
-      {dragOver && (
+      {dragOver && (!receiver.assignedItems || receiver.assignedItems.length === 0) && (
         <div className="drop-indicator">
           Drop item here
         </div>
