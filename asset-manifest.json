@@ -1,16 +1,16 @@
 {
   "files": {
-    "main.css": "/inventory-tracker/static/css/main.0ffd3129.css",
-    "main.js": "/inventory-tracker/static/js/main.15dbb591.js",
+    "main.css": "/inventory-tracker/static/css/main.738a2073.css",
+    "main.js": "/inventory-tracker/static/js/main.8fdc30e8.js",
     "static/js/488.8a0fea1b.chunk.js": "/inventory-tracker/static/js/488.8a0fea1b.chunk.js",
     "static/media/cyborg_rider_001.png": "/inventory-tracker/static/media/cyborg_rider_001.bc72f4d9f90e1e889665.png",
     "index.html": "/inventory-tracker/index.html",
-    "main.0ffd3129.css.map": "/inventory-tracker/static/css/main.0ffd3129.css.map",
-    "main.15dbb591.js.map": "/inventory-tracker/static/js/main.15dbb591.js.map",
+    "main.738a2073.css.map": "/inventory-tracker/static/css/main.738a2073.css.map",
+    "main.8fdc30e8.js.map": "/inventory-tracker/static/js/main.8fdc30e8.js.map",
     "488.8a0fea1b.chunk.js.map": "/inventory-tracker/static/js/488.8a0fea1b.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.0ffd3129.css",
-    "static/js/main.15dbb591.js"
+    "static/css/main.738a2073.css",
+    "static/js/main.8fdc30e8.js"
   ]
 }
