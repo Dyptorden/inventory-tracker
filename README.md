@@ -1,70 +1,262 @@
-# Getting Started with Create React App
+# Inventory Tracker
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A modern, real-time inventory management system built with React and Firebase. Track items, assign them to receivers, and manage your inventory with an intuitive drag-and-drop interface.
 
-## Available Scripts
+![Inventory Tracker Demo](https://img.shields.io/badge/Status-Live-brightgreen)
+![React](https://img.shields.io/badge/React-18.2.0-blue)
+![Firebase](https://img.shields.io/badge/Firebase-10.7.1-orange)
 
-In the project directory, you can run:
+## 🚀 Live Demo
 
-### `npm start`
+[View Live Application](https://dyptorden.github.io/inventory-tracker)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## ✨ Features
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Core Functionality
+- **Real-time Synchronization** - Changes appear instantly across all users
+- **Drag & Drop Interface** - Intuitive item assignment to receivers
+- **Cloud Storage** - Data persists across sessions and devices
+- **Responsive Design** - Works on desktop, tablet, and mobile
 
-### `npm test`
+### Inventory Management
+- ✅ Add, edit, and delete inventory items
+- ✅ Multiple item types (HMI, Battery, Motor, Range Extender, Radar)
+- ✅ Unique serial number validation
+- ✅ Sortable item lists (by serial number or type)
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Receiver Management
+- ✅ Add, edit, and delete receivers
+- ✅ Email validation and uniqueness checking
+- ✅ Click-to-email functionality
+- ✅ Visual assignment tracking
 
-### `npm run build`
+### User Experience
+- ✅ Loading states and error handling
+- ✅ Keyboard shortcuts (Enter, Escape)
+- ✅ Auto-focus for accessibility
+- ✅ Visual feedback for all interactions
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 🛠️ Tech Stack
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- **Frontend**: React 18.2.0
+- **Backend**: Firebase Firestore
+- **Deployment**: GitHub Pages
+- **Styling**: CSS-in-JS with custom styling
+- **Build Tool**: Create React App
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## 📋 Prerequisites
 
-### `npm run eject`
+Before running this project, make sure you have:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+- Node.js (version 14 or higher)
+- npm or yarn package manager
+- A Firebase project (for database functionality)
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 🔧 Installation
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/dyptorden/inventory-tracker.git
+   cd inventory-tracker
+   ```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-## Learn More
+3. **Firebase Setup**
+    - Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
+    - Enable Firestore Database
+    - Update the Firebase configuration in `src/firebase.js` with your project credentials
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+4. **Start the development server**
+   ```bash
+   npm start
+   ```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+5. **Open your browser**
+   Navigate to `http://localhost:3000`
 
-### Code Splitting
+## 🔥 Firebase Configuration
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+Update `src/firebase.js` with your Firebase project configuration:
 
-### Analyzing the Bundle Size
+```javascript
+const firebaseConfig = {
+  apiKey: "your-api-key",
+  authDomain: "your-project.firebaseapp.com",
+  projectId: "your-project-id",
+  storageBucket: "your-project.appspot.com",
+  messagingSenderId: "your-sender-id",
+  appId: "your-app-id"
+};
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### Firestore Security Rules
 
-### Making a Progressive Web App
+For development, use these rules in Firebase Console > Firestore > Rules:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+```
 
-### Advanced Configuration
+⚠️ **Important**: Update security rules for production use!
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## 📊 Database Structure
 
-### Deployment
+### Collections
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+**Items Collection (`items`)**
+```javascript
+{
+  id: "auto-generated-id",
+  serialNumber: "ABC123",
+  type: "HMI",
+  createdAt: timestamp,
+  updatedAt: timestamp
+}
+```
 
-### `npm run build` fails to minify
+**Receivers Collection (`receivers`)**
+```javascript
+{
+  id: "auto-generated-id",
+  firstName: "John",
+  lastName: "Doe",
+  email: "john.doe@example.com",
+  assignedItems: [
+    {
+      serialNumber: "ABC123",
+      type: "HMI"
+    }
+  ],
+  createdAt: timestamp,
+  updatedAt: timestamp
+}
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## 🎮 How to Use
+
+### Adding Items
+1. Click "Add an item" in the left panel
+2. Enter a unique serial number
+3. Select the item type from dropdown
+4. Click "Add" to save
+
+### Managing Receivers
+1. Click "Add Receivers" in the right panel
+2. Fill in first name, last name, and email
+3. Click "Add" to create receiver
+
+### Assigning Items
+1. **Drag and drop** items from the left panel to receiver cards
+2. **Click assigned items** to return them to inventory
+3. **Click receiver email** to send an email
+
+### Editing & Deleting
+- **Click any item or receiver** to see modify/delete options
+- Use the popup menu to edit or remove entries
+
+## 🚀 Deployment
+
+This project is configured for GitHub Pages deployment:
+
+```bash
+# Build and deploy to GitHub Pages
+npm run deploy
+```
+
+The deployment configuration is already set up in `package.json`.
+
+## 📱 Responsive Design
+
+The application is fully responsive and works on:
+- **Desktop** (optimal experience)
+- **Tablet** (grid layout adapts)
+- **Mobile** (stacked layout)
+
+## 🔒 Security Considerations
+
+### Current Setup
+- Firebase config values are public (this is normal and safe)
+- Database uses test mode rules (open access)
+- No user authentication implemented
+
+### Production Recommendations
+1. **Implement Firebase Authentication**
+2. **Update Firestore Security Rules**
+3. **Add user-based data isolation**
+4. **Enable audit logging**
+
+Example production security rules:
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📝 Available Scripts
+
+- `npm start` - Start development server
+- `npm run build` - Build for production
+- `npm test` - Run test suite
+- `npm run deploy` - Deploy to GitHub Pages
+
+## 🐛 Known Issues
+
+- Items returned to inventory may briefly appear unsorted
+- Modal focus management needs improvement on mobile
+- Offline functionality limited to browser cache
+
+## 🔮 Future Enhancements
+
+- [ ] User authentication and authorization
+- [ ] Multi-tenant support (organizations)
+- [ ] Item history and audit trail
+- [ ] Barcode scanning integration
+- [ ] Email notifications for assignments
+- [ ] Advanced search and filtering
+- [ ] Data export/import functionality
+- [ ] Dark mode theme
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👤 Author
+
+**Your Name**
+- GitHub: [@dyptorden](https://github.com/dyptorden)
+- Project Link: [https://github.com/dyptorden/inventory-tracker](https://github.com/dyptorden/inventory-tracker)
+
+## 🙏 Acknowledgments
+
+- Firebase for providing the backend infrastructure
+- React team for the amazing frontend framework
+- GitHub Pages for free hosting
+- The open-source community for inspiration and tools
+
+---
+
+**Made with ❤️ for efficient inventory management**
