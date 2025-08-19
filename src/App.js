@@ -1,12 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import cyborgImage from './assets/cyborg_rider_001.png'; // Add this import
-
-// Mock database for demonstration (replace with actual Firebase in production)
-let mockDatabase = {
-  items: [],
-  receivers: [],
-  nextId: 1
-};
+import cyborgImage from './assets/cyborg_rider_001.png';
+import {
+  addItem,
+  updateItem,
+  deleteItem,
+  addReceiver,
+  updateReceiver,
+  deleteReceiver,
+  subscribeToItems,
+  subscribeToReceivers,
+  assignItemToReceiver,
+  returnItemToInventory
+} from './services/firebaseService';
 
 // Component for draggable items
 const DraggableItem = ({ item, onModify, onDelete, onDragStart, itemIndex, totalItems }) => {
@@ -54,9 +59,9 @@ const DraggableItem = ({ item, onModify, onDelete, onDragStart, itemIndex, total
 
     const rect = itemRef.current.getBoundingClientRect();
     return {
-      position: 'fixed', // Use fixed to escape overflow clipping
-      top: rect.top, // Align with item's top
-      left: rect.right - 120, // Align with item's right edge, accounting for popup width
+      position: 'fixed',
+      top: rect.top,
+      left: rect.right - 120,
       zIndex: 99999,
       backgroundColor: 'white',
       border: '1px solid #d1d5db',
@@ -150,8 +155,6 @@ const ReceiverCell = ({ receiver, onItemDrop, onModify, onDelete, onItemRemove }
   };
 
   const handleDragLeave = (e) => {
-    // Only trigger drag leave if we're actually leaving the receiver card
-    // Check if the related target is not a child of the current target
     if (!e.currentTarget.contains(e.relatedTarget)) {
       setDragOver(false);
     }
@@ -252,14 +255,12 @@ const ReceiverCell = ({ receiver, onItemDrop, onModify, onDelete, onItemRemove }
 const Modal = ({ isOpen, onClose, children, autoFocus = false, onClosed }) => {
   const modalRef = useRef(null);
 
-  // Auto-focus the modal when it opens (for error modals)
   useEffect(() => {
     if (isOpen && autoFocus && modalRef.current) {
       modalRef.current.focus();
     }
   }, [isOpen, autoFocus]);
 
-  // Handle keyboard events for modal
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (isOpen && autoFocus && (e.key === 'Enter' || e.key === 'Escape')) {
@@ -276,11 +277,9 @@ const Modal = ({ isOpen, onClose, children, autoFocus = false, onClosed }) => {
     };
   }, [isOpen, autoFocus]);
 
-  // Handle modal closing with callback
   const handleClose = () => {
     onClose();
     if (onClosed) {
-      // Small delay to ensure modal is closed before calling onClosed
       setTimeout(onClosed, 100);
     }
   };
@@ -301,10 +300,25 @@ const Modal = ({ isOpen, onClose, children, autoFocus = false, onClosed }) => {
   );
 };
 
+// Loading component
+const LoadingSpinner = () => (
+  <div style={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '200px',
+    fontSize: '1.2rem',
+    color: '#6b7280'
+  }}>
+    Loading...
+  </div>
+);
+
 // Main App component
 const InventoryTracker = () => {
   const [items, setItems] = useState([]);
   const [receivers, setReceivers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showItemModal, setShowItemModal] = useState(false);
   const [showReceiverModal, setShowReceiverModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -323,6 +337,38 @@ const InventoryTracker = () => {
   const [itemForm, setItemForm] = useState({ serialNumber: '', type: 'HMI' });
   const [receiverForm, setReceiverForm] = useState({ firstName: '', lastName: '', email: '' });
 
+  // Set up real-time listeners
+  useEffect(() => {
+    let itemsUnsubscribe, receiversUnsubscribe;
+
+    const setupListeners = async () => {
+      try {
+        // Subscribe to items
+        itemsUnsubscribe = subscribeToItems((itemsData) => {
+          setItems(itemsData);
+          setLoading(false);
+        });
+
+        // Subscribe to receivers
+        receiversUnsubscribe = subscribeToReceivers((receiversData) => {
+          setReceivers(receiversData);
+        });
+      } catch (error) {
+        console.error('Error setting up listeners:', error);
+        showError('Failed to connect to database. Please check your internet connection.');
+        setLoading(false);
+      }
+    };
+
+    setupListeners();
+
+    // Cleanup function
+    return () => {
+      if (itemsUnsubscribe) itemsUnsubscribe();
+      if (receiversUnsubscribe) receiversUnsubscribe();
+    };
+  }, []);
+
   // Sort items
   const sortedItems = [...items].sort((a, b) => {
     let result;
@@ -338,18 +384,18 @@ const InventoryTracker = () => {
   const showError = (message, returnFocusRef = null) => {
     setErrorModal({ show: true, message, returnFocus: returnFocusRef });
   };
+
   // Email validation function
   const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
+
   // Handle sort button clicks
   const handleSort = (newSortBy) => {
     if (sortBy === newSortBy) {
-      // If clicking the same sort button, reverse the order
       setSortReverse(!sortReverse);
     } else {
-      // If clicking a different sort button, change sort type and reset reverse
       setSortBy(newSortBy);
       setSortReverse(false);
     }
@@ -361,7 +407,7 @@ const InventoryTracker = () => {
   };
 
   // Add or update item
-  const handleItemSubmit = () => {
+  const handleItemSubmit = async () => {
     if (!itemForm.serialNumber.trim()) {
       showError('Serial number is required!', serialNumberRef);
       return;
@@ -385,7 +431,6 @@ const InventoryTracker = () => {
       return false;
     });
 
-    // Generate specific error message based on where the duplicate was found
     if (existingInItems) {
       showError('There is already an item with that serial in the items list!', serialNumberRef);
       return;
@@ -399,33 +444,22 @@ const InventoryTracker = () => {
     try {
       if (editingItem) {
         // Update existing item
-        const updatedItems = items.map(item =>
-          item.id === editingItem.id
-            ? { ...item, ...itemForm }
-            : item
-        );
-        setItems(updatedItems);
-        mockDatabase.items = updatedItems;
+        await updateItem(editingItem.id, itemForm);
       } else {
         // Add new item
-        const newItem = {
-          id: mockDatabase.nextId++,
-          ...itemForm
-        };
-        const updatedItems = [...items, newItem];
-        setItems(updatedItems);
-        mockDatabase.items = updatedItems;
+        await addItem(itemForm);
       }
       setShowItemModal(false);
       setItemForm({ serialNumber: '', type: 'HMI' });
       setEditingItem(null);
     } catch (error) {
       console.error('Error saving item:', error);
+      showError('Failed to save item. Please try again.');
     }
   };
 
   // Add or update receiver
-  const handleReceiverSubmit = () => {
+  const handleReceiverSubmit = async () => {
     const errors = [];
     let firstErrorRef = null;
 
@@ -479,129 +513,68 @@ const InventoryTracker = () => {
 
       if (editingReceiver) {
         // Update existing receiver
-        const updatedReceivers = receivers.map(receiver =>
-          receiver.id === editingReceiver.id
-            ? { ...receiver, ...receiverData }
-            : receiver
-        );
-        setReceivers(updatedReceivers);
-        mockDatabase.receivers = updatedReceivers;
+        await updateReceiver(editingReceiver.id, receiverData);
       } else {
         // Add new receiver
-        const newReceiver = {
-          id: mockDatabase.nextId++,
-          ...receiverData
-        };
-        const updatedReceivers = [...receivers, newReceiver];
-        setReceivers(updatedReceivers);
-        mockDatabase.receivers = updatedReceivers;
+        await addReceiver(receiverData);
       }
       setShowReceiverModal(false);
       setReceiverForm({ firstName: '', lastName: '', email: '' });
       setEditingReceiver(null);
     } catch (error) {
       console.error('Error saving receiver:', error);
+      showError('Failed to save receiver. Please try again.');
     }
   };
 
   // Handle item drop on receiver
-  const handleItemDrop = (item, receiverId) => {
+  const handleItemDrop = async (item, receiverId) => {
     try {
-      // Remove item from items list
-      const updatedItems = items.filter(i => i.id !== item.id);
-      setItems(updatedItems);
-      mockDatabase.items = updatedItems;
-
-      // Add item to receiver's assigned items
-      const updatedReceivers = receivers.map(receiver => {
-        if (receiver.id === receiverId) {
-          return {
-            ...receiver,
-            assignedItems: [...(receiver.assignedItems || []), {
-              serialNumber: item.serialNumber,
-              type: item.type
-            }]
-          };
-        }
-        return receiver;
-      });
-      setReceivers(updatedReceivers);
-      mockDatabase.receivers = updatedReceivers;
+      await assignItemToReceiver(item, receiverId);
     } catch (error) {
       console.error('Error dropping item:', error);
+      showError('Failed to assign item. Please try again.');
     }
   };
 
   // Handle item removal from receiver back to items
-  const handleItemRemove = (item, receiverId) => {
+  const handleItemRemove = async (item, receiverId) => {
     try {
-      // Add item back to items list
-      const newItem = {
-        id: mockDatabase.nextId++,
-        serialNumber: item.serialNumber,
-        type: item.type
-      };
-      const updatedItems = [...items, newItem].sort((a, b) => {
-        let result;
-        if (sortBy === 'serial') {
-          result = a.serialNumber.localeCompare(b.serialNumber);
-        } else {
-          result = a.type.localeCompare(b.type);
-        }
-        return sortReverse ? -result : result;
-      });
-      setItems(updatedItems);
-      mockDatabase.items = updatedItems;
-
-      // Remove item from receiver's assigned items
-      const updatedReceivers = receivers.map(receiver => {
-        if (receiver.id === receiverId) {
-          const updatedAssignedItems = receiver.assignedItems.filter(
-            assignedItem => !(assignedItem.serialNumber === item.serialNumber && assignedItem.type === item.type)
-          );
-          return { ...receiver, assignedItems: updatedAssignedItems };
-        }
-        return receiver;
-      });
-      setReceivers(updatedReceivers);
-      mockDatabase.receivers = updatedReceivers;
+      await returnItemToInventory(item, receiverId);
     } catch (error) {
       console.error('Error removing item:', error);
+      showError('Failed to return item to inventory. Please try again.');
     }
   };
 
   // Delete functions
-  const handleDeleteItem = (itemId) => {
+  const handleDeleteItem = async (itemId) => {
     try {
-      const updatedItems = items.filter(item => item.id !== itemId);
-      setItems(updatedItems);
-      mockDatabase.items = updatedItems;
+      await deleteItem(itemId);
     } catch (error) {
       console.error('Error deleting item:', error);
+      showError('Failed to delete item. Please try again.');
     }
   };
 
-  const handleDeleteReceiver = (receiverId) => {
+  const handleDeleteReceiver = async (receiverId) => {
     try {
       // First, return all assigned items to the items list
       const receiver = receivers.find(r => r.id === receiverId);
       if (receiver?.assignedItems) {
-        const returnedItems = receiver.assignedItems.map(item => ({
-          id: mockDatabase.nextId++,
-          serialNumber: item.serialNumber,
-          type: item.type
-        }));
-        const updatedItems = [...items, ...returnedItems];
-        setItems(updatedItems);
-        mockDatabase.items = updatedItems;
+        for (const item of receiver.assignedItems) {
+          await addItem({
+            serialNumber: item.serialNumber,
+            type: item.type
+          });
+        }
       }
 
       // Remove receiver
-      const updatedReceivers = receivers.filter(receiver => receiver.id !== receiverId);
-      setReceivers(updatedReceivers);
-      mockDatabase.receivers = updatedReceivers;
+      await deleteReceiver(receiverId);
     } catch (error) {
       console.error('Error deleting receiver:', error);
+      showError('Failed to delete receiver. Please try again.');
     }
   };
 
@@ -643,6 +616,10 @@ const InventoryTracker = () => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [showItemModal, showReceiverModal, errorModal.show]);
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <div className="app-container">
@@ -987,7 +964,10 @@ const InventoryTracker = () => {
         }
 
         .empty-state {
-          display: none;
+          text-align: center;
+          color: #6b7280;
+          padding: 2rem;
+          font-style: italic;
         }
       `}</style>
 
@@ -1227,10 +1207,10 @@ const InventoryTracker = () => {
           <li>• Click items/receivers to modify or delete</li>
           <li>• Items auto-sort when returned to inventory</li>
         </ul>
-        <div style={{ marginTop: '0.75rem', padding: '0.5rem', backgroundColor: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '0.375rem' }}>
-          <strong style={{ fontSize: '0.75rem', color: '#92400e' }}>Note:</strong>
-          <p style={{ fontSize: '0.75rem', color: '#92400e', margin: 0 }}>
-            This demo uses local storage. For real collaboration, integrate with Firebase Firestore.
+        <div style={{ marginTop: '0.75rem', padding: '0.5rem', backgroundColor: '#dcfce7', border: '1px solid #22c55e', borderRadius: '0.375rem' }}>
+          <strong style={{ fontSize: '0.75rem', color: '#166534' }}>Firebase Connected:</strong>
+          <p style={{ fontSize: '0.75rem', color: '#166534', margin: 0 }}>
+            Data is now synchronized in real-time across all users!
           </p>
         </div>
       </div>
