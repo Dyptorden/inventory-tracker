@@ -1,16 +1,25 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { subscribeToItems, addItem, updateItem, deleteItem } from '../services/firebaseService';
+import {
+  subscribeToItems,
+  subscribeToAllItems,
+  addItem,
+  updateItem,
+  deleteItem,
+  retrieveAssignedItem
+} from '../services/firebaseService';
 
 export const useItems = () => {
-  const [items, setItems] = useState([]);
+  const [allItems, setAllItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('serial');
   const [sortReverse, setSortReverse] = useState(false);
+  const [showUnassignedOnly, setShowUnassignedOnly] = useState(true);
+  const [hoveredItemId, setHoveredItemId] = useState(null);
 
-  // Set up real-time listener
+  // Set up real-time listener for all items (including assigned ones)
   useEffect(() => {
-    const unsubscribe = subscribeToItems((itemsData) => {
-      setItems(itemsData);
+    const unsubscribe = subscribeToAllItems((itemsData) => {
+      setAllItems(itemsData);
       setLoading(false);
     });
 
@@ -19,9 +28,17 @@ export const useItems = () => {
     };
   }, []);
 
+  // Filter items based on unassigned toggle
+  const filteredItems = useMemo(() => {
+    if (showUnassignedOnly) {
+      return allItems.filter(item => !item.isAssigned);
+    }
+    return allItems;
+  }, [allItems, showUnassignedOnly]);
+
   // Sort items
   const sortedItems = useMemo(() => {
-    return [...items].sort((a, b) => {
+    return [...filteredItems].sort((a, b) => {
       let result;
       if (sortBy === 'serial') {
         result = a.serialNumber.localeCompare(b.serialNumber);
@@ -30,7 +47,7 @@ export const useItems = () => {
       }
       return sortReverse ? -result : result;
     });
-  }, [items, sortBy, sortReverse]);
+  }, [filteredItems, sortBy, sortReverse]);
 
   // Handle sort button clicks
   const handleSort = useCallback((newSortBy) => {
@@ -41,6 +58,27 @@ export const useItems = () => {
       setSortReverse(false);
     }
   }, [sortBy, sortReverse]);
+
+  // Toggle unassigned filter
+  const toggleUnassignedOnly = useCallback(() => {
+    setShowUnassignedOnly(prev => !prev);
+  }, []);
+
+  // Item hover handlers
+  const handleItemHover = useCallback((itemId) => {
+    setHoveredItemId(itemId);
+  }, []);
+
+  const handleItemHoverEnd = useCallback(() => {
+    setHoveredItemId(null);
+  }, []);
+
+  // Get receiver ID for hovered item
+  const hoveredItemReceiverId = useMemo(() => {
+    if (!hoveredItemId) return null;
+    const hoveredItem = allItems.find(item => item.id === hoveredItemId);
+    return hoveredItem?.receiverId || null;
+  }, [hoveredItemId, allItems]);
 
   // Item operations
   const createItem = useCallback(async (itemData) => {
@@ -55,6 +93,11 @@ export const useItems = () => {
 
   const modifyItem = useCallback(async (itemId, itemData) => {
     try {
+      // If it's an assigned item, we need to handle it differently
+      if (itemId.startsWith('assigned-')) {
+        // For now, we'll show an error - modifying assigned items needs special handling
+        return { success: false, error: 'Cannot modify assigned items directly. Please return to inventory first.' };
+      }
       await updateItem(itemId, itemData);
       return { success: true };
     } catch (error) {
@@ -65,6 +108,10 @@ export const useItems = () => {
 
   const removeItem = useCallback(async (itemId) => {
     try {
+      // If it's an assigned item, we need to handle it differently
+      if (itemId.startsWith('assigned-')) {
+        return { success: false, error: 'Cannot delete assigned items directly. Please retrieve them first.' };
+      }
       await deleteItem(itemId);
       return { success: true };
     } catch (error) {
@@ -73,15 +120,33 @@ export const useItems = () => {
     }
   }, []);
 
+  // Retrieve assigned item
+  const retrieveItem = useCallback(async (assignedItem) => {
+    try {
+      await retrieveAssignedItem(assignedItem);
+      return { success: true };
+    } catch (error) {
+      console.error('Error retrieving item:', error);
+      return { success: false, error: 'Failed to retrieve item. Please try again.' };
+    }
+  }, []);
+
   return {
-    items,
+    items: sortedItems,
     sortedItems,
+    allItems,
     loading,
     sortBy,
     sortReverse,
+    showUnassignedOnly,
+    hoveredItemReceiverId,
     handleSort,
+    toggleUnassignedOnly,
+    handleItemHover,
+    handleItemHoverEnd,
     createItem,
     modifyItem,
-    removeItem
+    removeItem,
+    retrieveItem
   };
 };

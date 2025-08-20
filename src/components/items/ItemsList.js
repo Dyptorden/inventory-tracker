@@ -8,10 +8,26 @@ const ItemsList = ({
   onDragStart,
   sortBy,
   sortReverse,
-  onSort
+  onSort,
+  showUnassignedOnly,
+  onToggleUnassigned,
+  onItemHover,
+  onItemHoverEnd,
+  onItemRetrieve
 }) => {
   return (
     <div>
+      {/* Unassigned Toggle */}
+      <div className="toggle-container">
+        <span className="toggle-label">Unassigned</span>
+        <div
+          className={`toggle-switch ${showUnassignedOnly ? 'active' : ''}`}
+          onClick={onToggleUnassigned}
+        >
+        </div>
+      </div>
+
+      {/* Sort Buttons */}
       <div className="button-group">
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button
@@ -31,6 +47,7 @@ const ItemsList = ({
         </div>
       </div>
 
+      {/* Items Container */}
       <div className="items-container">
         {items.map((item) => (
           <DraggableItem
@@ -39,11 +56,14 @@ const ItemsList = ({
             onModify={onItemModify}
             onDelete={onItemDelete}
             onDragStart={onDragStart}
+            onHover={onItemHover}
+            onHoverEnd={onItemHoverEnd}
+            onRetrieve={onItemRetrieve}
           />
         ))}
         {items.length === 0 && (
           <div className="empty-state">
-            No items in inventory
+            {showUnassignedOnly ? 'No unassigned items' : 'No items in inventory'}
           </div>
         )}
       </div>

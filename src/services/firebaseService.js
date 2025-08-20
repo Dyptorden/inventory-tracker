@@ -186,6 +186,124 @@ export const assignItemToReceiver = async (item, receiverId) => {
   }
 };
 
+// Utility function to get all items (including assigned ones with receiver info)
+export const getAllItemsWithAssignments = async () => {
+  try {
+    // Get all items from items collection
+    const itemsSnapshot = await getDocs(
+      query(collection(db, ITEMS_COLLECTION), orderBy('serialNumber'))
+    );
+    const unassignedItems = itemsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      isAssigned: false,
+      receiverEmail: null,
+      receiverId: null
+    }));
+
+    // Get all receivers and their assigned items
+    const receiversSnapshot = await getDocs(
+      query(collection(db, RECEIVERS_COLLECTION))
+    );
+    const assignedItems = [];
+
+    receiversSnapshot.docs.forEach(doc => {
+      const receiver = { id: doc.id, ...doc.data() };
+      if (receiver.assignedItems) {
+        receiver.assignedItems.forEach(item => {
+          assignedItems.push({
+            id: `assigned-${receiver.id}-${item.serialNumber}`,
+            serialNumber: item.serialNumber,
+            type: item.type,
+            isAssigned: true,
+            receiverEmail: receiver.email,
+            receiverId: receiver.id,
+            receiverName: `${receiver.firstName} ${receiver.lastName}`
+          });
+        });
+      }
+    });
+
+    // Combine and sort all items
+    const allItems = [...unassignedItems, ...assignedItems];
+    return allItems.sort((a, b) => a.serialNumber.localeCompare(b.serialNumber));
+  } catch (error) {
+    console.error('Error getting all items with assignments:', error);
+    throw error;
+  }
+};
+
+// Real-time listener for all items (including assigned ones)
+export const subscribeToAllItems = (callback) => {
+  // We need to listen to both collections
+  const itemsQuery = query(collection(db, ITEMS_COLLECTION), orderBy('serialNumber'));
+  const receiversQuery = query(collection(db, RECEIVERS_COLLECTION));
+
+  let itemsData = [];
+  let receiversData = [];
+  let unsubscribeFunctions = [];
+
+  const combineAndCallback = () => {
+    // Combine unassigned items with assigned items from receivers
+    const unassignedItems = itemsData.map(item => ({
+      ...item,
+      isAssigned: false,
+      receiverEmail: null,
+      receiverId: null
+    }));
+
+    const assignedItems = [];
+    receiversData.forEach(receiver => {
+      if (receiver.assignedItems) {
+        receiver.assignedItems.forEach(item => {
+          assignedItems.push({
+            id: `assigned-${receiver.id}-${item.serialNumber}`,
+            serialNumber: item.serialNumber,
+            type: item.type,
+            isAssigned: true,
+            receiverEmail: receiver.email,
+            receiverId: receiver.id,
+            receiverName: `${receiver.firstName} ${receiver.lastName}`
+          });
+        });
+      }
+    });
+
+    const allItems = [...unassignedItems, ...assignedItems];
+    allItems.sort((a, b) => a.serialNumber.localeCompare(b.serialNumber));
+    callback(allItems);
+  };
+
+  // Subscribe to items
+  const unsubscribeItems = onSnapshot(itemsQuery, (querySnapshot) => {
+    itemsData = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    combineAndCallback();
+  }, (error) => {
+    console.error('Error in items subscription:', error);
+  });
+
+  // Subscribe to receivers
+  const unsubscribeReceivers = onSnapshot(receiversQuery, (querySnapshot) => {
+    receiversData = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    combineAndCallback();
+  }, (error) => {
+    console.error('Error in receivers subscription:', error);
+  });
+
+  unsubscribeFunctions = [unsubscribeItems, unsubscribeReceivers];
+
+  // Return cleanup function
+  return () => {
+    unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
+  };
+};
+
 // Utility function to return item from receiver to inventory
 export const returnItemToInventory = async (item, receiverId) => {
   try {
@@ -220,6 +338,44 @@ export const returnItemToInventory = async (item, receiverId) => {
     return true;
   } catch (error) {
     console.error('Error returning item to inventory:', error);
+    throw error;
+  }
+};
+
+// Utility function to retrieve an assigned item back to inventory
+export const retrieveAssignedItem = async (assignedItem) => {
+  try {
+    // First, add the item back to items collection
+    await addItem({
+      serialNumber: assignedItem.serialNumber,
+      type: assignedItem.type
+    });
+
+    // Then, get the current receiver data and remove the item
+    const receivers = await getReceivers();
+    const receiver = receivers.find(r => r.id === assignedItem.receiverId);
+
+    if (!receiver) {
+      throw new Error('Receiver not found');
+    }
+
+    // Remove item from receiver's assigned items
+    const updatedAssignedItems = receiver.assignedItems.filter(
+      item => !(
+        item.serialNumber === assignedItem.serialNumber &&
+        item.type === assignedItem.type
+      )
+    );
+
+    // Update receiver with updated assigned items
+    await updateReceiver(assignedItem.receiverId, {
+      ...receiver,
+      assignedItems: updatedAssignedItems
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error retrieving assigned item:', error);
     throw error;
   }
 };

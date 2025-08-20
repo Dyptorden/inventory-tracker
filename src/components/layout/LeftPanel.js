@@ -9,7 +9,12 @@ const LeftPanel = ({
   onAddItem,
   onItemModify,
   onItemDelete,
-  onDragStart
+  onDragStart,
+  showUnassignedOnly,
+  onToggleUnassigned,
+  onItemHover,
+  onItemHoverEnd,
+  onItemRetrieve
 }) => {
   return (
     <div className="left-panel">
@@ -32,6 +37,11 @@ const LeftPanel = ({
         onItemModify={onItemModify}
         onItemDelete={onItemDelete}
         onDragStart={onDragStart}
+        showUnassignedOnly={showUnassignedOnly}
+        onToggleUnassigned={onToggleUnassigned}
+        onItemHover={onItemHover}
+        onItemHoverEnd={onItemHoverEnd}
+        onItemRetrieve={onItemRetrieve}
       />
     </div>
   );

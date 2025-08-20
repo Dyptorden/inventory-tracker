@@ -6,7 +6,8 @@ const ReceiversGrid = ({
   onItemDrop,
   onReceiverModify,
   onReceiverDelete,
-  onItemRemove
+  onItemRemove,
+  highlightedReceiverId
 }) => {
   return (
     <div className="receiver-grid">
@@ -23,6 +24,7 @@ const ReceiversGrid = ({
             onModify={onReceiverModify}
             onDelete={onReceiverDelete}
             onItemRemove={onItemRemove}
+            isHighlighted={highlightedReceiverId === receiver.id}
           />
         ))
       )}

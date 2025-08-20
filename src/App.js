@@ -35,10 +35,16 @@ const InventoryTracker = () => {
     loading: itemsLoading,
     sortBy,
     sortReverse,
+    showUnassignedOnly,
+    hoveredItemReceiverId,
     handleSort,
+    toggleUnassignedOnly,
+    handleItemHover,
+    handleItemHoverEnd,
     createItem,
     modifyItem,
-    removeItem
+    removeItem,
+    retrieveItem
   } = useItems();
 
   const {
@@ -133,6 +139,13 @@ const InventoryTracker = () => {
     }
   };
 
+  const handleItemRetrieve = async (item) => {
+    const result = await retrieveItem(item);
+    if (!result.success) {
+      showError(result.error);
+    }
+  };
+
   // Receiver operations
   const handleAddReceiver = () => {
     receiverModal.openModal(null);
@@ -196,6 +209,11 @@ const InventoryTracker = () => {
         onItemModify={handleItemModify}
         onItemDelete={handleItemDelete}
         onDragStart={handleDragStart}
+        showUnassignedOnly={showUnassignedOnly}
+        onToggleUnassigned={toggleUnassignedOnly}
+        onItemHover={handleItemHover}
+        onItemHoverEnd={handleItemHoverEnd}
+        onItemRetrieve={handleItemRetrieve}
       />
 
       {/* Right Panel - Receivers */}
@@ -207,6 +225,7 @@ const InventoryTracker = () => {
         onReceiverDelete={handleReceiverDelete}
         onItemRemove={handleItemRemove}
         backgroundImage={cyborgImage}
+        highlightedReceiverId={hoveredItemReceiverId}
       />
 
       {/* Modals */}

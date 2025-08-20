@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const ReceiverCell = ({ receiver, onItemDrop, onModify, onDelete, onItemRemove }) => {
+const ReceiverCell = ({
+  receiver,
+  onItemDrop,
+  onModify,
+  onDelete,
+  onItemRemove,
+  isHighlighted = false
+}) => {
   const [showOptions, setShowOptions] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const optionsRef = useRef(null);
@@ -88,13 +95,15 @@ const ReceiverCell = ({ receiver, onItemDrop, onModify, onDelete, onItemRemove }
     ? [...receiver.assignedItems].sort((a, b) => a.serialNumber.localeCompare(b.serialNumber))
     : [];
 
+  const cardClassName = `receiver-card ${dragOver ? 'drag-over' : ''} ${isHighlighted ? 'highlighted' : ''}`;
+
   return (
     <div
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`receiver-card ${dragOver ? 'drag-over' : ''}`}
+      className={cardClassName}
       onClick={() => setShowOptions(!showOptions)}
     >
       <div className="receiver-name">

@@ -8,7 +8,8 @@ const RightPanel = ({
   onReceiverModify,
   onReceiverDelete,
   onItemRemove,
-  backgroundImage
+  backgroundImage,
+  highlightedReceiverId
 }) => {
   const panelStyle = backgroundImage ? {
     backgroundImage: `url(${backgroundImage})`,
@@ -36,6 +37,7 @@ const RightPanel = ({
         onReceiverModify={onReceiverModify}
         onReceiverDelete={onReceiverDelete}
         onItemRemove={onItemRemove}
+        highlightedReceiverId={highlightedReceiverId}
       />
     </div>
   );

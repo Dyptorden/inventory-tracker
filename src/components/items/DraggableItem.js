@@ -1,9 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const DraggableItem = ({ item, onModify, onDelete, onDragStart }) => {
+const DraggableItem = ({
+  item,
+  onModify,
+  onDelete,
+  onDragStart,
+  onHover,
+  onHoverEnd,
+  onRetrieve
+}) => {
   const [showOptions, setShowOptions] = useState(false);
   const optionsRef = useRef(null);
   const itemRef = useRef(null);
+
+  const isAssigned = item.isAssigned;
+  const isDraggable = !isAssigned;
 
   // Close options when clicking outside
   useEffect(() => {
@@ -69,24 +80,68 @@ const DraggableItem = ({ item, onModify, onDelete, onDragStart }) => {
     setShowOptions(false);
   };
 
+  const handleRetrieve = (e) => {
+    e.stopPropagation();
+    onRetrieve(item);
+    setShowOptions(false);
+  };
+
+  const handleMouseEnter = () => {
+    if (isAssigned && onHover) {
+      onHover(item.id);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (isAssigned && onHoverEnd) {
+      onHoverEnd();
+    }
+  };
+
+  const handleDragStart = (e) => {
+    if (isDraggable) {
+      onDragStart(e, item);
+    } else {
+      e.preventDefault();
+    }
+  };
+
   return (
     <div
       ref={itemRef}
-      draggable
-      onDragStart={(e) => onDragStart(e, item)}
-      className="item-card"
+      draggable={isDraggable}
+      onDragStart={handleDragStart}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className={`item-card ${isAssigned ? 'assigned' : ''}`}
       onClick={() => setShowOptions(!showOptions)}
-      style={{ zIndex: showOptions ? 10000 : 2 }}
+      style={{
+        zIndex: showOptions ? 10000 : 2,
+        cursor: isDraggable ? 'move' : 'pointer'
+      }}
     >
-      <div>{item.serialNumber} -> {item.type}</div>
+      <div>{item.serialNumber}_{item.type}</div>
+      {isAssigned && (
+        <div className="assigned-receiver-info">
+          {item.receiverEmail}
+        </div>
+      )}
       {showOptions && (
         <div ref={optionsRef} style={getPopupStyle()}>
-          <button className="option-button" onClick={handleModify}>
-            Modify
-          </button>
-          <button className="option-button delete" onClick={handleDelete}>
-            Delete
-          </button>
+          {isAssigned ? (
+            <button className="option-button retrieve" onClick={handleRetrieve}>
+              Retrieve
+            </button>
+          ) : (
+            <>
+              <button className="option-button" onClick={handleModify}>
+                Modify
+              </button>
+              <button className="option-button delete" onClick={handleDelete}>
+                Delete
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
