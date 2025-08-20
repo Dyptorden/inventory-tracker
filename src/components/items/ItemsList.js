@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import DraggableItem from './DraggableItem';
 
 const ItemsList = ({
@@ -14,8 +14,67 @@ const ItemsList = ({
   onItemHover,
   onItemHoverEnd,
   onItemRetrieve,
-  onItemHistory
+  onItemHistory,
+  typeFilter,
+  onTypeFilterChange
 }) => {
+
+  const itemTypes = ['HMI', 'Battery', 'Motor', 'Range Extender', 'Radar'];
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterRef = useRef(null);
+
+  const handleTypeToggle = (type) => {
+    if (typeFilter.includes(type)) {
+      // Remove type from filter
+      onTypeFilterChange(typeFilter.filter(t => t !== type));
+    } else {
+      // Add type to filter
+      onTypeFilterChange([...typeFilter, type]);
+    }
+  };
+
+  const handleAllToggle = () => {
+    if (typeFilter.length === itemTypes.length) {
+      // If all are selected, unselect all
+      onTypeFilterChange([]);
+    } else {
+      // If not all are selected, select all
+      onTypeFilterChange([...itemTypes]);
+    }
+  };
+
+  const isAllSelected = typeFilter.length === itemTypes.length;
+  const isIndeterminate = typeFilter.length > 0 && typeFilter.length < itemTypes.length;
+
+  // Close filter when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (filterRef.current && !filterRef.current.contains(event.target)) {
+        setIsFilterOpen(false);
+      }
+    };
+
+    if (isFilterOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isFilterOpen]);
+
+  // Get display text for the filter button
+  const getFilterDisplayText = () => {
+    if (typeFilter.length === 0) {
+      return 'No types selected';
+    } else if (typeFilter.length === itemTypes.length) {
+      return 'All types';
+    } else if (typeFilter.length === 1) {
+      return typeFilter[0];
+    } else {
+      return `${typeFilter.length} types selected`;
+    }
+  };
   return (
     <div>
       {/* Unassigned Toggle */}
@@ -28,22 +87,69 @@ const ItemsList = ({
         </div>
       </div>
 
-      {/* Sort Buttons */}
-      <div className="button-group">
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+      {/* Filter and Sort Controls */}
+      <div className="controls-row">
+        {/* Type Filter */}
+        <div className="filter-container" ref={filterRef}>
+          <button
+            className="filter-button"
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+          >
+            <span>{getFilterDisplayText()}</span>
+            <span className={`filter-arrow ${isFilterOpen ? 'open' : ''}`}>▼</span>
+          </button>
+
+          {isFilterOpen && (
+            <div className="filter-dropdown">
+              <div className="filter-header">Filter by Type:</div>
+              <div className="checkbox-group">
+                {/* All option */}
+                <label className="checkbox-item checkbox-all">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = isIndeterminate;
+                    }}
+                    onChange={handleAllToggle}
+                    className="checkbox-input"
+                  />
+                  <span className="checkbox-label checkbox-label-all">All</span>
+                </label>
+
+                {/* Separator */}
+                <div className="checkbox-separator"></div>
+
+                {/* Individual types */}
+                {itemTypes.map(type => (
+                  <label key={type} className="checkbox-item">
+                    <input
+                      type="checkbox"
+                      checked={typeFilter.includes(type)}
+                      onChange={() => handleTypeToggle(type)}
+                      className="checkbox-input"
+                    />
+                    <span className="checkbox-label">{type}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Sort Buttons */}
+        <div className="sort-buttons">
           <button
             className={`button button-secondary ${sortBy === 'serial' ? 'active' : ''}`}
             onClick={() => onSort('serial')}
-            style={{ flex: 1, fontSize: '0.75rem', padding: '0.4rem 0.5rem' }}
           >
-            Sort by serial {sortBy === 'serial' && (sortReverse ? '↓' : '↑')}
+            Serial {sortBy === 'serial' && (sortReverse ? '↓' : '↑')}
           </button>
           <button
             className={`button button-secondary ${sortBy === 'type' ? 'active' : ''}`}
             onClick={() => onSort('type')}
-            style={{ flex: 1, fontSize: '0.75rem', padding: '0.4rem 0.5rem' }}
           >
-            Sort by type {sortBy === 'type' && (sortReverse ? '↓' : '↑')}
+            Type {sortBy === 'type' && (sortReverse ? '↓' : '↑')}
           </button>
         </div>
       </div>

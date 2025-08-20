@@ -14,6 +14,7 @@ export const useItems = () => {
   const [sortBy, setSortBy] = useState('serial');
   const [sortReverse, setSortReverse] = useState(false);
   const [showUnassignedOnly, setShowUnassignedOnly] = useState(true);
+  const [typeFilter, setTypeFilter] = useState(['HMI', 'Battery', 'Motor', 'Range Extender', 'Radar']); // All types selected by default
   const [hoveredItemId, setHoveredItemId] = useState(null);
 
   // Set up real-time listener for all items (including assigned ones)
@@ -28,13 +29,22 @@ export const useItems = () => {
     };
   }, []);
 
-  // Filter items based on unassigned toggle
+  // Filter items based on unassigned toggle and type filter
   const filteredItems = useMemo(() => {
+    let items = allItems;
+
+    // Filter by unassigned status
     if (showUnassignedOnly) {
-      return allItems.filter(item => !item.isAssigned);
+      items = items.filter(item => !item.isAssigned);
     }
-    return allItems;
-  }, [allItems, showUnassignedOnly]);
+
+    // Filter by type (only if not all types are selected)
+    if (typeFilter.length > 0 && typeFilter.length < 5) { // 5 is total number of types
+      items = items.filter(item => typeFilter.includes(item.type));
+    }
+
+    return items;
+  }, [allItems, showUnassignedOnly, typeFilter]);
 
   // Sort items
   const sortedItems = useMemo(() => {
@@ -62,6 +72,11 @@ export const useItems = () => {
   // Toggle unassigned filter
   const toggleUnassignedOnly = useCallback(() => {
     setShowUnassignedOnly(prev => !prev);
+  }, []);
+
+  // Handle type filter change
+  const handleTypeFilterChange = useCallback((newTypeFilter) => {
+    setTypeFilter(newTypeFilter);
   }, []);
 
   // Item hover handlers
@@ -139,9 +154,11 @@ export const useItems = () => {
     sortBy,
     sortReverse,
     showUnassignedOnly,
+    typeFilter,
     hoveredItemReceiverId,
     handleSort,
     toggleUnassignedOnly,
+    handleTypeFilterChange,
     handleItemHover,
     handleItemHoverEnd,
     createItem,

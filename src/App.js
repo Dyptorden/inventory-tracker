@@ -37,9 +37,11 @@ const InventoryTracker = () => {
     sortBy,
     sortReverse,
     showUnassignedOnly,
+    typeFilter,
     hoveredItemReceiverId,
     handleSort,
     toggleUnassignedOnly,
+    handleTypeFilterChange,
     handleItemHover,
     handleItemHoverEnd,
     createItem,
@@ -222,6 +224,8 @@ const InventoryTracker = () => {
         onItemHoverEnd={handleItemHoverEnd}
         onItemRetrieve={handleItemRetrieve}
         onItemHistory={handleItemHistory}
+        typeFilter={typeFilter}
+        onTypeFilterChange={handleTypeFilterChange}
       />
 
       {/* Right Panel - Receivers */}

@@ -15,7 +15,9 @@ const LeftPanel = ({
   onItemHover,
   onItemHoverEnd,
   onItemRetrieve,
-  onItemHistory
+  onItemHistory,
+  typeFilter,
+  onTypeFilterChange
 }) => {
   return (
     <div className="left-panel">
@@ -44,6 +46,8 @@ const LeftPanel = ({
         onItemHoverEnd={onItemHoverEnd}
         onItemRetrieve={onItemRetrieve}
         onItemHistory={onItemHistory}
+        typeFilter={typeFilter}
+        onTypeFilterChange={onTypeFilterChange}
       />
     </div>
   );
