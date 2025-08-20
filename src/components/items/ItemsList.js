@@ -13,7 +13,8 @@ const ItemsList = ({
   onToggleUnassigned,
   onItemHover,
   onItemHoverEnd,
-  onItemRetrieve
+  onItemRetrieve,
+  onItemHistory
 }) => {
   return (
     <div>
@@ -59,6 +60,7 @@ const ItemsList = ({
             onHover={onItemHover}
             onHoverEnd={onItemHoverEnd}
             onRetrieve={onItemRetrieve}
+            onHistory={onItemHistory}
           />
         ))}
         {items.length === 0 && (

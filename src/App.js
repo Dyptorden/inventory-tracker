@@ -14,6 +14,7 @@ import { useModal, useErrorModal } from './hooks/useModal';
 // Import components
 import LoadingSpinner from './components/common/LoadingSpinner';
 import ErrorModal from './components/common/ErrorModal';
+import HistoryModal from './components/common/HistoryModal';
 import LeftPanel from './components/layout/LeftPanel';
 import RightPanel from './components/layout/RightPanel';
 import Instructions from './components/layout/Instructions';
@@ -60,6 +61,7 @@ const InventoryTracker = () => {
   // Modal hooks
   const itemModal = useModal();
   const receiverModal = useModal();
+  const historyModal = useModal();
   const { errorModal, showError, handleErrorClose } = useErrorModal();
 
   // Loading state
@@ -71,6 +73,7 @@ const InventoryTracker = () => {
       if (e.key === 'Escape') {
         if (itemModal.isOpen) itemModal.closeModal();
         if (receiverModal.isOpen) receiverModal.closeModal();
+        if (historyModal.isOpen) historyModal.closeModal();
       }
     };
 
@@ -78,7 +81,7 @@ const InventoryTracker = () => {
     return () => {
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [itemModal, receiverModal]);
+  }, [itemModal, receiverModal, historyModal]);
 
   // Drag and drop handlers
   const handleDragStart = (e, item) => {
@@ -144,6 +147,10 @@ const InventoryTracker = () => {
     if (!result.success) {
       showError(result.error);
     }
+  };
+
+  const handleItemHistory = (serialNumber) => {
+    historyModal.openModal(serialNumber);
   };
 
   // Receiver operations
@@ -214,6 +221,7 @@ const InventoryTracker = () => {
         onItemHover={handleItemHover}
         onItemHoverEnd={handleItemHoverEnd}
         onItemRetrieve={handleItemRetrieve}
+        onItemHistory={handleItemHistory}
       />
 
       {/* Right Panel - Receivers */}
@@ -246,6 +254,12 @@ const InventoryTracker = () => {
       <ErrorModal
         errorModal={errorModal}
         onClose={handleErrorClose}
+      />
+
+      <HistoryModal
+        isOpen={historyModal.isOpen}
+        onClose={historyModal.closeModal}
+        serialNumber={historyModal.data}
       />
 
       {/* Instructions */}

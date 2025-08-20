@@ -14,7 +14,8 @@ const LeftPanel = ({
   onToggleUnassigned,
   onItemHover,
   onItemHoverEnd,
-  onItemRetrieve
+  onItemRetrieve,
+  onItemHistory
 }) => {
   return (
     <div className="left-panel">
@@ -42,6 +43,7 @@ const LeftPanel = ({
         onItemHover={onItemHover}
         onItemHoverEnd={onItemHoverEnd}
         onItemRetrieve={onItemRetrieve}
+        onItemHistory={onItemHistory}
       />
     </div>
   );

@@ -7,13 +7,31 @@ import {
   getDocs,
   onSnapshot,
   query,
-  orderBy
+  orderBy,
+  where,
+  getDoc
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
 // Collections
 const ITEMS_COLLECTION = 'items';
 const RECEIVERS_COLLECTION = 'receivers';
+const HISTORY_COLLECTION = 'itemHistory';
+
+// Helper function to add history entry
+const addHistoryEntry = async (serialNumber, operation) => {
+  try {
+    await addDoc(collection(db, HISTORY_COLLECTION), {
+      serialNumber,
+      operation,
+      timestamp: new Date(),
+      createdAt: new Date()
+    });
+  } catch (error) {
+    console.error('Error adding history entry:', error);
+    // Don't throw error - history is not critical for operation
+  }
+};
 
 // Item operations
 export const addItem = async (itemData) => {
@@ -33,10 +51,42 @@ export const addItem = async (itemData) => {
 export const updateItem = async (itemId, itemData) => {
   try {
     const itemRef = doc(db, ITEMS_COLLECTION, itemId);
+
+    // Get the current item to check for changes
+    const currentDoc = await getDoc(itemRef);
+
+    if (currentDoc.exists()) {
+      const currentData = currentDoc.data();
+      const changes = [];
+
+      // Check for serial number changes
+      if (currentData.serialNumber !== itemData.serialNumber) {
+        changes.push(`Serial number updated from ${currentData.serialNumber} to ${itemData.serialNumber}`);
+      }
+
+      // Check for type changes
+      if (currentData.type !== itemData.type) {
+        changes.push(`Type updated from ${currentData.type} to ${itemData.type}`);
+      }
+
+      // If there are changes, log them
+      if (changes.length > 0) {
+        let changeMessage;
+        if (changes.length === 1) {
+          changeMessage = changes[0];
+        } else {
+          changeMessage = changes.slice(0, -1).join(', ') + ' and ' + changes[changes.length - 1];
+        }
+
+        await addHistoryEntry(itemData.serialNumber, changeMessage);
+      }
+    }
+
     await updateDoc(itemRef, {
       ...itemData,
       updatedAt: new Date()
     });
+
     return { id: itemId, ...itemData };
   } catch (error) {
     console.error('Error updating item:', error);
@@ -178,6 +228,9 @@ export const assignItemToReceiver = async (item, receiverId) => {
       ...receiver,
       assignedItems: updatedAssignedItems
     });
+
+    // Add history entry
+    await addHistoryEntry(item.serialNumber, `assigned to ${receiver.email}`);
 
     return true;
   } catch (error) {
@@ -335,6 +388,9 @@ export const returnItemToInventory = async (item, receiverId) => {
       assignedItems: updatedAssignedItems
     });
 
+    // Add history entry
+    await addHistoryEntry(item.serialNumber, `retrieved from ${receiver.email}`);
+
     return true;
   } catch (error) {
     console.error('Error returning item to inventory:', error);
@@ -373,9 +429,67 @@ export const retrieveAssignedItem = async (assignedItem) => {
       assignedItems: updatedAssignedItems
     });
 
+    // Add history entry
+    await addHistoryEntry(assignedItem.serialNumber, `retrieved from ${receiver.email}`);
+
     return true;
   } catch (error) {
     console.error('Error retrieving assigned item:', error);
     throw error;
+  }
+};
+
+// Get history for a specific item
+export const getItemHistory = async (serialNumber) => {
+  try {
+    console.log('Fetching history for serial number:', serialNumber);
+
+    const historyQuery = query(
+      collection(db, HISTORY_COLLECTION),
+      where('serialNumber', '==', serialNumber),
+      orderBy('timestamp', 'desc')
+    );
+
+    const querySnapshot = await getDocs(historyQuery);
+    const historyData = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      console.log('History entry:', data);
+      return {
+        id: doc.id,
+        ...data
+      };
+    });
+
+    console.log('Total history entries found:', historyData.length);
+    return historyData;
+  } catch (error) {
+    console.error('Error getting item history:', error);
+
+    // If the error is about missing index, try without orderBy
+    try {
+      console.log('Retrying without orderBy...');
+      const simpleQuery = query(
+        collection(db, HISTORY_COLLECTION),
+        where('serialNumber', '==', serialNumber)
+      );
+
+      const querySnapshot = await getDocs(simpleQuery);
+      const historyData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      // Sort manually by timestamp
+      historyData.sort((a, b) => {
+        const timeA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(a.timestamp);
+        const timeB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(b.timestamp);
+        return timeB - timeA; // Descending order
+      });
+
+      return historyData;
+    } catch (retryError) {
+      console.error('Retry also failed:', retryError);
+      throw retryError;
+    }
   }
 };

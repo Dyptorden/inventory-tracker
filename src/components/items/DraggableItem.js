@@ -7,7 +7,8 @@ const DraggableItem = ({
   onDragStart,
   onHover,
   onHoverEnd,
-  onRetrieve
+  onRetrieve,
+  onHistory
 }) => {
   const [showOptions, setShowOptions] = useState(false);
   const optionsRef = useRef(null);
@@ -21,6 +22,10 @@ const DraggableItem = ({
     const handleClickOutside = (event) => {
       if (optionsRef.current && !optionsRef.current.contains(event.target)) {
         setShowOptions(false);
+        // End hover effect when options close
+        if (isAssigned && onHoverEnd) {
+          onHoverEnd();
+        }
       }
     };
 
@@ -31,13 +36,17 @@ const DraggableItem = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showOptions]);
+  }, [showOptions, isAssigned, onHoverEnd]);
 
   // Handle Enter and Escape key presses for popup
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (showOptions && (e.key === 'Enter' || e.key === 'Escape')) {
         setShowOptions(false);
+        // End hover effect when options close with keyboard
+        if (isAssigned && onHoverEnd) {
+          onHoverEnd();
+        }
       }
     };
 
@@ -48,7 +57,7 @@ const DraggableItem = ({
     return () => {
       document.removeEventListener('keydown', handleKeyPress);
     };
-  }, [showOptions]);
+  }, [showOptions, isAssigned, onHoverEnd]);
 
   // Calculate popup position relative to viewport
   const getPopupStyle = () => {
@@ -80,8 +89,22 @@ const DraggableItem = ({
     setShowOptions(false);
   };
 
+  const handleHistory = (e) => {
+    e.stopPropagation();
+    // End hover effect when opening history
+    if (isAssigned && onHoverEnd) {
+      onHoverEnd();
+    }
+    onHistory(item.serialNumber);
+    setShowOptions(false);
+  };
+
   const handleRetrieve = (e) => {
     e.stopPropagation();
+    // End hover effect when retrieving
+    if (isAssigned && onHoverEnd) {
+      onHoverEnd();
+    }
     onRetrieve(item);
     setShowOptions(false);
   };
@@ -120,7 +143,7 @@ const DraggableItem = ({
         cursor: isDraggable ? 'move' : 'pointer'
       }}
     >
-      <div>{item.serialNumber}_{item.type}</div>
+      <div>{item.serialNumber} -> {item.type}</div>
       {isAssigned && (
         <div className="assigned-receiver-info">
           {item.receiverEmail}
@@ -129,13 +152,21 @@ const DraggableItem = ({
       {showOptions && (
         <div ref={optionsRef} style={getPopupStyle()}>
           {isAssigned ? (
-            <button className="option-button retrieve" onClick={handleRetrieve}>
-              Retrieve
-            </button>
+            <>
+              <button className="option-button history" onClick={handleHistory}>
+                History
+              </button>
+              <button className="option-button retrieve" onClick={handleRetrieve}>
+                Retrieve
+              </button>
+            </>
           ) : (
             <>
               <button className="option-button" onClick={handleModify}>
                 Modify
+              </button>
+              <button className="option-button history" onClick={handleHistory}>
+                History
               </button>
               <button className="option-button delete" onClick={handleDelete}>
                 Delete
